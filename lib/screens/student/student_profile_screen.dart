@@ -10,9 +10,7 @@ class StudentProfileScreen extends StatefulWidget {
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   final client = Supabase.instance.client;
-  final _nameCtrl = TextEditingController();
   bool _loading = false;
-  bool _editing = false;
   Map<String, dynamic>? _profile;
 
   @override
@@ -23,24 +21,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     if (user == null) return;
     try {
       final data = await client.from('profiles').select().eq('id', user.id).single();
-      if (mounted) setState(() { _profile = data; _nameCtrl.text = data['full_name'] ?? ''; });
+      if (mounted) setState(() { _profile = data; });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal load profil: $e")));
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    setState(() => _loading = true);
-    try {
-      await client.from('profiles').update({'full_name': _nameCtrl.text.trim()}).eq('id', client.auth.currentUser!.id);
-      await _loadProfile();
-      setState(() => _editing = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profil berhasil diupdate"), backgroundColor: Colors.green));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: $e")));
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -113,9 +96,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   @override
-  void dispose() { _nameCtrl.dispose(); super.dispose(); }
-
-  @override
   Widget build(BuildContext context) {
     if (_profile == null) return const Center(child: CircularProgressIndicator());
 
@@ -153,46 +133,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Biodata", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        IconButton(
-                          icon: Icon(_editing ? Icons.close : Icons.edit, color: Colors.deepPurple),
-                          onPressed: () => setState(() => _editing = !_editing),
-                        ),
-                      ],
-                    ),
+                    const Text("Biodata", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const Divider(),
                     const SizedBox(height: 8),
-                    _editing
-                        ? TextField(
-                            controller: _nameCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Nama Lengkap', prefixIcon: Icon(Icons.person), border: OutlineInputBorder(),
-                            ),
-                          )
-                        : _InfoRow(icon: Icons.person, label: "Nama Lengkap", value: _profile!['full_name'] ?? '-'),
+                    _InfoRow(icon: Icons.person, label: "Nama Lengkap", value: _profile!['full_name'] ?? '-'),
                     const SizedBox(height: 12),
                     _InfoRow(icon: Icons.email, label: "Email", value: _profile!['email'] ?? '-'),
                     const SizedBox(height: 12),
                     _InfoRow(icon: Icons.class_, label: "Kelas", value: _profile!['class_id'] ?? '-'),
                     const SizedBox(height: 12),
                     _InfoRow(icon: Icons.badge, label: "Role", value: "Siswa"),
-                    if (_editing) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _loading ? null : _saveProfile,
-                          icon: _loading
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.save),
-                          label: const Text("Simpan Perubahan"),
-                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -215,7 +165,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── Tampilan ──────────────────────────────────────
+            // Tampilan
             Card(elevation: 2, child: _ThemeToggleTile()),
           ],
         ),
